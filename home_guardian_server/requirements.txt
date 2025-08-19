@@ -1,0 +1,23 @@
+# Home Guardian Server V2 - Complete Dependencies
+# Includes wake word detection and Firebase Cloud Messaging support
+
+# ===== CORE DEPENDENCIES (Required) =====
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart
+pyserial>=3.5
+requests>=2.31.0
+pydantic>=2.0.0
+
+# ===== FACE DETECTION DEPENDENCIES (Required) =====
+aiortc>=1.6.0
+aiohttp>=3.8.0
+opencv-python>=4.8.0
+
+# ===== WAKE WORD DEPENDENCIES (Optional - graceful fallback if not configured) =====
+pvporcupine>=3.0.0
+sounddevice>=0.4.6
+numpy>=1.24.0
+
+# ===== FIREBASE CLOUD MESSAGING DEPENDENCIES (Optional - graceful fallback if not configured) =====
+firebase-admin>=6.2.0
