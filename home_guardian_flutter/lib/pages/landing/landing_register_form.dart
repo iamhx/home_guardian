@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:home_guardian/pages/dashboard/dashboard_page.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/shared_widgets.dart';
 import 'landing_helpers.dart';
 
 class RegisterForm extends StatefulWidget {
@@ -41,16 +42,9 @@ class _RegisterFormState extends State<RegisterForm> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _usernameController,
-                  decoration: InputDecoration(
+                  decoration: buildAppInputDecoration(
                     labelText: 'Username',
-                    prefixIcon: const Icon(Icons.person_outline),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
-                    ),
+                    prefixIcon: Icons.person_outline,
                   ),
                   validator: validateUsername,
                 ),
@@ -58,16 +52,9 @@ class _RegisterFormState extends State<RegisterForm> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
+                  decoration: buildAppInputDecoration(
                     labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
-                    ),
+                    prefixIcon: Icons.email_outlined,
                   ),
                   validator: validateEmail,
                 ),
@@ -75,21 +62,14 @@ class _RegisterFormState extends State<RegisterForm> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: authProvider.obscureRegisterPassword,
-                  decoration: InputDecoration(
+                  decoration: buildAppInputDecoration(
                     labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    prefixIcon: Icons.lock_outline,
                     suffixIcon: IconButton(
                       icon: Icon(
                         authProvider.obscureRegisterPassword ? Icons.visibility : Icons.visibility_off,
                       ),
                       onPressed: authProvider.toggleRegisterPasswordVisibility,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
                     ),
                   ),
                   validator: validatePassword,
@@ -98,21 +78,14 @@ class _RegisterFormState extends State<RegisterForm> {
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: authProvider.obscureConfirmPassword,
-                  decoration: InputDecoration(
+                  decoration: buildAppInputDecoration(
                     labelText: 'Confirm Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    prefixIcon: Icons.lock_outline,
                     suffixIcon: IconButton(
                       icon: Icon(
                         authProvider.obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
                       ),
                       onPressed: authProvider.toggleConfirmPasswordVisibility,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -126,33 +99,10 @@ class _RegisterFormState extends State<RegisterForm> {
                   },
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: authProvider.isLoading ? null : () => _handleRegister(authProvider),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3B82F6),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                  child: authProvider.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Create Account',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                LoadingButton(
+                  isLoading: authProvider.isLoading,
+                  onPressed: () => _handleRegister(authProvider),
+                  label: 'Create Account',
                 ),
                 const SizedBox(height: 24),
               ],
@@ -176,20 +126,7 @@ class _RegisterFormState extends State<RegisterForm> {
           await Future.delayed(const Duration(milliseconds: 500));
           if (mounted) {
             Navigator.of(context).pushReplacement(
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) => const DashboardPage(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  const begin = Offset(1.0, 0.0);
-                  const end = Offset.zero;
-                  const curve = Curves.easeInOut;
-                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                  return SlideTransition(
-                    position: animation.drive(tween),
-                    child: child,
-                  );
-                },
-                transitionDuration: const Duration(milliseconds: 300),
-              ),
+              buildSlidePageRoute(const DashboardPage()),
             );
           }
         }

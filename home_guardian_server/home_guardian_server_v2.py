@@ -355,6 +355,17 @@ class HomeGuardianServerV2:
             raise HTTPException(status_code=500, detail=f"Status read error: {e}")
 
 
+    async def _execute_command(self, command: str, delay: float = 0.2):
+        """Stop smart patrol if active, send a command, wait, and return status.
+
+        Consolidates the repeated pattern used across servo/patrol endpoints.
+        """
+        if self.smart_patrol_active:
+            await self.stop_smart_patrol()
+        self._send_command(command)
+        await asyncio.sleep(delay)
+        return self._read_status()
+
     def _setup_routes(self):
         app = self.app
         server = self
@@ -426,44 +437,23 @@ class HomeGuardianServerV2:
 
         @app.post("/api/servos/attach")
         async def attach_servos():
-            if server.smart_patrol_active:
-                await server.stop_smart_patrol()
-            server._send_command("ATTACH")
-            # Wait a moment for ESP32 to update
-            await asyncio.sleep(0.5)
-            return server._read_status()
+            return await server._execute_command("ATTACH", delay=0.5)
 
         @app.post("/api/servos/detach")
         async def detach_servos():
-            if server.smart_patrol_active:
-                await server.stop_smart_patrol()
-            server._send_command("DETACH")
-            await asyncio.sleep(0.5)
-            return server._read_status()
+            return await server._execute_command("DETACH", delay=0.5)
 
         @app.post("/api/servos/center")
         async def center_servos():
-            if server.smart_patrol_active:
-                await server.stop_smart_patrol()
-            server._send_command("CENTER")
-            await asyncio.sleep(0.2)
-            return server._read_status()
+            return await server._execute_command("CENTER")
 
         @app.post("/api/patrol/start")
         async def start_patrol():
-            if server.smart_patrol_active:
-                await server.stop_smart_patrol()
-            server._send_command("MODE_PATROL")
-            await asyncio.sleep(0.2)
-            return server._read_status()
+            return await server._execute_command("MODE_PATROL")
 
         @app.post("/api/patrol/stop")
         async def stop_patrol():
-            if server.smart_patrol_active:
-                await server.stop_smart_patrol()
-            server._send_command("MODE_IDLE")
-            await asyncio.sleep(0.2)
-            return server._read_status()
+            return await server._execute_command("MODE_IDLE")
 
 
         @app.websocket("/ws/manual")

@@ -214,31 +214,29 @@ class CameraViewProvider extends ChangeNotifier {
     return _client!.getWebRTCStreamUrl();
   }
 
-  // Toggle power (attach/detach servos) HTTP request
-  Future<void> togglePower() async {
-    if (_client == null || _cameraStatus == null || _isPowerLoading) return;
+  /// Generic toggle helper that encapsulates the repeated pattern:
+  /// guard -> set loading -> determine action -> call API -> log -> unset loading.
+  Future<void> _executeToggle({
+    required bool isAlreadyLoading,
+    required void Function(bool) setLoading,
+    required bool condition,
+    required Future<CameraStatus?> Function() onTrue,
+    required Future<CameraStatus?> Function() onFalse,
+    required ActionType actionOnTrue,
+    required ActionType actionOnFalse,
+    required String errorPrefix,
+  }) async {
+    if (_client == null || _cameraStatus == null || isAlreadyLoading) return;
 
-    _isPowerLoading = true;
+    setLoading(true);
     notifyListeners();
 
     try {
-      CameraStatus? newStatus;
-      ActionType actionType;
-
-      if (_cameraStatus!.active) {
-        // Camera is active, so power off (detach servos)
-        newStatus = await _client!.detachServos();
-        actionType = ActionType.powerOff;
-      } else {
-        // Camera is inactive, so power on (attach servos)
-        newStatus = await _client!.attachServos();
-        actionType = ActionType.powerOn;
-      }
+      final newStatus = condition ? await onTrue() : await onFalse();
+      final actionType = condition ? actionOnTrue : actionOnFalse;
 
       if (newStatus != null) {
         _cameraStatus = newStatus;
-
-        // Log the action
         if (_cameraName != null) {
           ActionLogService.logAction(
             cameraName: _cameraName!,
@@ -247,92 +245,43 @@ class CameraViewProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      _error = 'Power toggle failed: $e';
+      _error = '$errorPrefix: $e';
     } finally {
-      _isPowerLoading = false;
+      setLoading(false);
       notifyListeners();
     }
   }
 
-  // Toggle patrol (start/stop patrol) HTTP request
-  Future<void> togglePatrol() async {
-    if (_client == null || _cameraStatus == null || _isPatrolLoading) return;
+  Future<void> togglePower() => _executeToggle(
+    isAlreadyLoading: _isPowerLoading,
+    setLoading: (v) => _isPowerLoading = v,
+    condition: _cameraStatus?.active == true,
+    onTrue: () => _client!.detachServos(),
+    onFalse: () => _client!.attachServos(),
+    actionOnTrue: ActionType.powerOff,
+    actionOnFalse: ActionType.powerOn,
+    errorPrefix: 'Power toggle failed',
+  );
 
-    _isPatrolLoading = true;
-    notifyListeners();
+  Future<void> togglePatrol() => _executeToggle(
+    isAlreadyLoading: _isPatrolLoading,
+    setLoading: (v) => _isPatrolLoading = v,
+    condition: _cameraStatus?.mode == 'patrol',
+    onTrue: () => _client!.stopPatrol(),
+    onFalse: () => _client!.startPatrol(),
+    actionOnTrue: ActionType.patrolStop,
+    actionOnFalse: ActionType.patrolStart,
+    errorPrefix: 'Patrol toggle failed',
+  );
 
-    try {
-      CameraStatus? newStatus;
-      ActionType actionType;
-
-      if (_cameraStatus!.mode == 'patrol') {
-        // Currently in patrol mode, so stop patrol
-        newStatus = await _client!.stopPatrol();
-        actionType = ActionType.patrolStop;
-      } else {
-        // Not in patrol mode, so start patrol
-        newStatus = await _client!.startPatrol();
-        actionType = ActionType.patrolStart;
-      }
-
-      if (newStatus != null) {
-        _cameraStatus = newStatus;
-
-        // Log the action
-        if (_cameraName != null) {
-          ActionLogService.logAction(
-            cameraName: _cameraName!,
-            actionType: actionType,
-          );
-        }
-      }
-    } catch (e) {
-      _error = 'Patrol toggle failed: $e';
-    } finally {
-      _isPatrolLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // Toggle smart patrol (start/stop smart patrol) HTTP request
-  Future<void> toggleSmartPatrol() async {
-    if (_client == null || _cameraStatus == null || _isSmartPatrolLoading) {
-      return;
-    }
-
-    _isSmartPatrolLoading = true;
-    notifyListeners();
-
-    try {
-      CameraStatus? newStatus;
-      ActionType actionType;
-
-      if (_cameraStatus!.mode == 'smart') {
-        // Currently in smart patrol mode, so stop smart patrol
-        newStatus = await _client!.stopSmartPatrol();
-        actionType = ActionType.smartPatrolStop;
-      } else {
-        // Not in smart patrol mode, so start smart patrol
-        newStatus = await _client!.startSmartPatrol();
-        actionType = ActionType.smartPatrolStart;
-      }
-
-      if (newStatus != null) {
-        _cameraStatus = newStatus;
-
-        // Log the action
-        if (_cameraName != null) {
-          ActionLogService.logAction(
-            cameraName: _cameraName!,
-            actionType: actionType,
-          );
-        }
-      }
-    } catch (e) {
-      _error = 'Smart patrol toggle failed: $e';
-    } finally {
-      _isSmartPatrolLoading = false;
-      notifyListeners();
-    }
-  }
+  Future<void> toggleSmartPatrol() => _executeToggle(
+    isAlreadyLoading: _isSmartPatrolLoading,
+    setLoading: (v) => _isSmartPatrolLoading = v,
+    condition: _cameraStatus?.mode == 'smart',
+    onTrue: () => _client!.stopSmartPatrol(),
+    onFalse: () => _client!.startSmartPatrol(),
+    actionOnTrue: ActionType.smartPatrolStop,
+    actionOnFalse: ActionType.smartPatrolStart,
+    errorPrefix: 'Smart patrol toggle failed',
+  );
 }

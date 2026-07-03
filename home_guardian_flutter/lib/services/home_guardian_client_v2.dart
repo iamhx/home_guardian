@@ -28,6 +28,18 @@ class HomeGuardianClientV2 {
 
   // ================= REST API =================
 
+  /// Generic POST helper that sends a request to [path] and parses a
+  /// [CameraStatus] from the JSON response. Returns null on failure.
+  Future<CameraStatus?> _postCameraStatus(String path) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl$path'));
+      if (response.statusCode == 200) {
+        return CameraStatus.fromJson(jsonDecode(response.body));
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<CameraStatus?> getStatus() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/api/status'));
@@ -38,79 +50,19 @@ class HomeGuardianClientV2 {
     return null;
   }
 
-  Future<CameraStatus?> attachServos() async {
-    try {
-      final response = await http.post(Uri.parse('$baseUrl/api/servos/attach'));
-      if (response.statusCode == 200) {
-        return CameraStatus.fromJson(jsonDecode(response.body));
-      }
-    } catch (_) {}
-    return null;
-  }
+  Future<CameraStatus?> attachServos() => _postCameraStatus('/api/servos/attach');
 
-  Future<CameraStatus?> detachServos() async {
-    try {
-      final response = await http.post(Uri.parse('$baseUrl/api/servos/detach'));
-      if (response.statusCode == 200) {
-        return CameraStatus.fromJson(jsonDecode(response.body));
-      }
-    } catch (_) {}
-    return null;
-  }
+  Future<CameraStatus?> detachServos() => _postCameraStatus('/api/servos/detach');
 
-  Future<CameraStatus?> centerServos() async {
-    try {
-      final response = await http.post(Uri.parse('$baseUrl/api/servos/center'));
-      if (response.statusCode == 200) {
-        return CameraStatus.fromJson(jsonDecode(response.body));
-      }
-    } catch (_) {}
-    return null;
-  }
+  Future<CameraStatus?> centerServos() => _postCameraStatus('/api/servos/center');
 
-  Future<CameraStatus?> startPatrol() async {
-    try {
-      final response = await http.post(Uri.parse('$baseUrl/api/patrol/start'));
-      if (response.statusCode == 200) {
-        return CameraStatus.fromJson(jsonDecode(response.body));
-      }
-    } catch (_) {}
-    return null;
-  }
+  Future<CameraStatus?> startPatrol() => _postCameraStatus('/api/patrol/start');
 
-  Future<CameraStatus?> stopPatrol() async {
-    try {
-      final response = await http.post(Uri.parse('$baseUrl/api/patrol/stop'));
-      if (response.statusCode == 200) {
-        return CameraStatus.fromJson(jsonDecode(response.body));
-      }
-    } catch (_) {}
-    return null;
-  }
+  Future<CameraStatus?> stopPatrol() => _postCameraStatus('/api/patrol/stop');
 
-  Future<CameraStatus?> startSmartPatrol() async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/smart_patrol/start'),
-      );
-      if (response.statusCode == 200) {
-        return CameraStatus.fromJson(jsonDecode(response.body));
-      }
-    } catch (_) {}
-    return null;
-  }
+  Future<CameraStatus?> startSmartPatrol() => _postCameraStatus('/api/smart_patrol/start');
 
-  Future<CameraStatus?> stopSmartPatrol() async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/smart_patrol/stop'),
-      );
-      if (response.statusCode == 200) {
-        return CameraStatus.fromJson(jsonDecode(response.body));
-      }
-    } catch (_) {}
-    return null;
-  }
+  Future<CameraStatus?> stopSmartPatrol() => _postCameraStatus('/api/smart_patrol/stop');
 
   Future<Map<String, dynamic>?> getHealth() async {
     try {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:home_guardian/pages/dashboard/dashboard_page.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/shared_widgets.dart';
 import 'forgot_password_page.dart';
 import 'landing_helpers.dart';
 
@@ -39,16 +40,9 @@ class _LoginFormState extends State<LoginForm> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
+                  decoration: buildAppInputDecoration(
                     labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
-                    ),
+                    prefixIcon: Icons.email_outlined,
                   ),
                   validator: validateEmail,
                 ),
@@ -56,77 +50,34 @@ class _LoginFormState extends State<LoginForm> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: authProvider.obscureLoginPassword,
-                  decoration: InputDecoration(
+                  decoration: buildAppInputDecoration(
                     labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    prefixIcon: Icons.lock_outline,
                     suffixIcon: IconButton(
                       icon: Icon(
                         authProvider.obscureLoginPassword ? Icons.visibility : Icons.visibility_off,
                       ),
                       onPressed: authProvider.toggleLoginPasswordVisibility,
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
-                    ),
                   ),
                   validator: validatePassword,
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: authProvider.isLoading ? null : () => _handleLogin(authProvider),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3B82F6),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                  child: authProvider.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Login',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                LoadingButton(
+                  isLoading: authProvider.isLoading,
+                  onPressed: () => _handleLogin(authProvider),
+                  label: 'Login',
                 ),
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).push(
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) => const ForgotPasswordPage(),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          const begin = Offset(1.0, 0.0);
-                          const end = Offset.zero;
-                          const curve = Curves.easeInOut;
-                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                          return SlideTransition(
-                            position: animation.drive(tween),
-                            child: child,
-                          );
-                        },
-                        transitionDuration: const Duration(milliseconds: 300),
-                      ),
+                      buildSlidePageRoute(const ForgotPasswordPage()),
                     );
                   },
                   child: const Text(
                     'Forgot Password?',
-                    style: TextStyle(color: Color(0xFF3B82F6)),
+                    style: TextStyle(color: kPrimaryBlue),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -150,20 +101,7 @@ class _LoginFormState extends State<LoginForm> {
           await Future.delayed(const Duration(milliseconds: 500));
           if (mounted) {
             Navigator.of(context).pushReplacement(
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) => const DashboardPage(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  const begin = Offset(1.0, 0.0);
-                  const end = Offset.zero;
-                  const curve = Curves.easeInOut;
-                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                  return SlideTransition(
-                    position: animation.drive(tween),
-                    child: child,
-                  );
-                },
-                transitionDuration: const Duration(milliseconds: 300),
-              ),
+              buildSlidePageRoute(const DashboardPage()),
             );
           }
         }
