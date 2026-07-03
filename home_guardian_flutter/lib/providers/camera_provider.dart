@@ -291,7 +291,7 @@ class CameraProvider with ChangeNotifier {
       await _performRefresh().timeout(const Duration(seconds: 30));
       
     } catch (e) {
-      // If we timeout or fail, mark all cameras as offline
+      debugPrint('[CameraProvider] Status refresh failed: $e');
       for (final camera in _cameras) {
         await _updateCameraStatus(camera.id, CameraStatus.offline);
       }
@@ -317,6 +317,7 @@ class CameraProvider with ChangeNotifier {
           isOnline ? CameraStatus.online : CameraStatus.offline,
         );
       } catch (e) {
+        debugPrint('[CameraProvider] Status check failed for ${camera.name}: $e');
         await _updateCameraStatus(camera.id, CameraStatus.offline);
       }
     });

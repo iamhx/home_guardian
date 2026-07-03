@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import '../utils/dialog_utils.dart';
 import 'navigation_service.dart';
 
@@ -59,6 +60,7 @@ class FirebaseMessagingService {
           _isWakeWordDialogShowing = false;
         });
       } catch (e) {
+        debugPrint('[FCM] Error showing wake word dialog: $e');
         _isWakeWordDialogShowing = false;
       }
     }

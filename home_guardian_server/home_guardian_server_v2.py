@@ -105,8 +105,11 @@ class HomeGuardianServerV2:
                     if idle_time >= idle_timeout:
                         break
                 # If still active, loop will restart and patrol again
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
-            print(f"[SmartPatrol] Error: {e}")
+            print(f"[SmartPatrol] Error in patrol loop: {e}")
+            self.smart_patrol_active = False
 
     async def start_smart_patrol(self):
         if not self.smart_patrol_active:
@@ -134,8 +137,8 @@ class HomeGuardianServerV2:
         if self.manual_ws:
             try:
                 await self.manual_ws.close(code=1001, reason="Server shutting down")
-            except:
-                pass
+            except Exception as e:
+                print(f"[HomeGuardianServer] Error closing manual WebSocket during cleanup: {e}")
             self.manual_ws = None
             self.manual_mode_active = False
         # Stop face detection
@@ -166,7 +169,8 @@ class HomeGuardianServerV2:
                 data = resp.json()
                 return data.get("ready", False)
             return False
-        except Exception:
+        except Exception as e:
+            print(f"[WebRTC] Stream readiness check failed for '{path_name}': {e}")
             return False
 
     def _send_wake_word_notification(self, keyword_index):
@@ -308,7 +312,9 @@ class HomeGuardianServerV2:
     def _connect_serial(self):
         try:
             self.serial_connection = serial.Serial(self.serial_port, self.baud_rate, timeout=SERIAL_TIMEOUT)
+            print(f"[Serial] Connected to ESP32 on {self.serial_port}")
         except Exception as e:
+            print(f"[Serial] Failed to connect to ESP32 on {self.serial_port}: {e}")
             self.serial_connection = None
 
     def _send_command(self, cmd: str):

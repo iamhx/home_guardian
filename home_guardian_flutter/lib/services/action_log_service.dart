@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../models/action_log.dart';
 
 /// Service for logging and retrieving camera action history from Firestore
@@ -33,7 +34,7 @@ class ActionLogService {
 
       await _actionLogsCollection.add(actionLog.toMap());
     } catch (e) {
-      // Silently fail - we don't want logging to break the app
+      debugPrint('[ActionLogService] Failed to log action: $e');
     }
   }
 
@@ -65,6 +66,7 @@ class ActionLogService {
 
       return allLogs.skip(offset).take(limit).toList();
     } catch (e) {
+      debugPrint('[ActionLogService] Failed to fetch action logs: $e');
       return [];
     }
   }

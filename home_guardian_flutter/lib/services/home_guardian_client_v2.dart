@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -34,7 +35,10 @@ class HomeGuardianClientV2 {
       if (response.statusCode == 200) {
         return CameraStatus.fromJson(jsonDecode(response.body));
       }
-    } catch (_) {}
+      debugPrint('[HomeGuardianClient] getStatus failed: HTTP ${response.statusCode}');
+    } catch (e) {
+      debugPrint('[HomeGuardianClient] getStatus error: $e');
+    }
     return null;
   }
 
@@ -44,7 +48,10 @@ class HomeGuardianClientV2 {
       if (response.statusCode == 200) {
         return CameraStatus.fromJson(jsonDecode(response.body));
       }
-    } catch (_) {}
+      debugPrint('[HomeGuardianClient] attachServos failed: HTTP ${response.statusCode}');
+    } catch (e) {
+      debugPrint('[HomeGuardianClient] attachServos error: $e');
+    }
     return null;
   }
 
@@ -54,7 +61,10 @@ class HomeGuardianClientV2 {
       if (response.statusCode == 200) {
         return CameraStatus.fromJson(jsonDecode(response.body));
       }
-    } catch (_) {}
+      debugPrint('[HomeGuardianClient] detachServos failed: HTTP ${response.statusCode}');
+    } catch (e) {
+      debugPrint('[HomeGuardianClient] detachServos error: $e');
+    }
     return null;
   }
 
@@ -64,7 +74,10 @@ class HomeGuardianClientV2 {
       if (response.statusCode == 200) {
         return CameraStatus.fromJson(jsonDecode(response.body));
       }
-    } catch (_) {}
+      debugPrint('[HomeGuardianClient] centerServos failed: HTTP ${response.statusCode}');
+    } catch (e) {
+      debugPrint('[HomeGuardianClient] centerServos error: $e');
+    }
     return null;
   }
 
@@ -74,7 +87,10 @@ class HomeGuardianClientV2 {
       if (response.statusCode == 200) {
         return CameraStatus.fromJson(jsonDecode(response.body));
       }
-    } catch (_) {}
+      debugPrint('[HomeGuardianClient] startPatrol failed: HTTP ${response.statusCode}');
+    } catch (e) {
+      debugPrint('[HomeGuardianClient] startPatrol error: $e');
+    }
     return null;
   }
 
@@ -84,7 +100,10 @@ class HomeGuardianClientV2 {
       if (response.statusCode == 200) {
         return CameraStatus.fromJson(jsonDecode(response.body));
       }
-    } catch (_) {}
+      debugPrint('[HomeGuardianClient] stopPatrol failed: HTTP ${response.statusCode}');
+    } catch (e) {
+      debugPrint('[HomeGuardianClient] stopPatrol error: $e');
+    }
     return null;
   }
 
@@ -96,7 +115,10 @@ class HomeGuardianClientV2 {
       if (response.statusCode == 200) {
         return CameraStatus.fromJson(jsonDecode(response.body));
       }
-    } catch (_) {}
+      debugPrint('[HomeGuardianClient] startSmartPatrol failed: HTTP ${response.statusCode}');
+    } catch (e) {
+      debugPrint('[HomeGuardianClient] startSmartPatrol error: $e');
+    }
     return null;
   }
 
@@ -108,7 +130,10 @@ class HomeGuardianClientV2 {
       if (response.statusCode == 200) {
         return CameraStatus.fromJson(jsonDecode(response.body));
       }
-    } catch (_) {}
+      debugPrint('[HomeGuardianClient] stopSmartPatrol failed: HTTP ${response.statusCode}');
+    } catch (e) {
+      debugPrint('[HomeGuardianClient] stopSmartPatrol error: $e');
+    }
     return null;
   }
 
@@ -118,7 +143,10 @@ class HomeGuardianClientV2 {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
-    } catch (_) {}
+      debugPrint('[HomeGuardianClient] getHealth failed: HTTP ${response.statusCode}');
+    } catch (e) {
+      debugPrint('[HomeGuardianClient] getHealth error: $e');
+    }
     return null;
   }
 
@@ -144,8 +172,8 @@ class HomeGuardianClientV2 {
           if (data['type'] == 'status' && onStatusUpdate != null) {
             onStatusUpdate(data);
           }
-        } catch (_) {
-          // Ignore malformed messages
+        } catch (e) {
+          debugPrint('[HomeGuardianClient] Error parsing manual WebSocket message: $e');
         }
       },
       onDone: () async {
@@ -197,7 +225,9 @@ class HomeGuardianClientV2 {
           final data = jsonDecode(message);
           final event = FaceDetectionEvent.fromJson(data);
           _faceDetectionController?.add(event);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[HomeGuardianClient] Error parsing face detection message: $e');
+        }
       },
       onDone: () async {
         if (_faceDetectionController != null &&

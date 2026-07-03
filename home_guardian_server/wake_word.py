@@ -94,8 +94,8 @@ class WakeWordDetector:
             try:
                 self._audio_stream.stop()
                 self._audio_stream.close()
-            except:
-                pass
+            except Exception as e:
+                print(f"[WakeWord] Error closing audio stream: {e}")
             self._audio_stream = None
         
         # Wait for thread to finish
@@ -106,8 +106,8 @@ class WakeWordDetector:
         if self.porcupine:
             try:
                 self.porcupine.delete()
-            except:
-                pass
+            except Exception as e:
+                print(f"[WakeWord] Error deleting Porcupine instance: {e}")
             self.porcupine = None
             
         print("[WakeWord] Stopped wake word detection")
@@ -303,5 +303,5 @@ if __name__ == "__main__":
     finally:
         try:
             detector.stop()
-        except:
-            pass
+        except Exception as e:
+            print(f"[WakeWord] Error stopping detector: {e}")

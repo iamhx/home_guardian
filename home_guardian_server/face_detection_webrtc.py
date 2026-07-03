@@ -81,8 +81,8 @@ class FaceDetectionWebRTC:
             if self._pc:
                 try:
                     await self._pc.close()
-                except:
-                    pass
+                except Exception as e:
+                    print(f"[FaceDetectionWebRTC] Error closing peer connection: {e}")
                 self._pc = None
 
     async def _on_video_track(self, track):
@@ -109,13 +109,16 @@ class FaceDetectionWebRTC:
 
     def _broadcast(self, face_count: int, detected: bool):
         data = {"face_count": face_count, "detected": detected}
-        
+        dead_connections = []
         for ws in self.ws_connections[:]:  # Use slice to create a copy
             try:
                 if self.event_loop is not None:
-                    fut = asyncio.run_coroutine_threadsafe(ws.send_json(data), self.event_loop)
-            except Exception:
-                pass
+                    asyncio.run_coroutine_threadsafe(ws.send_json(data), self.event_loop)
+            except Exception as e:
+                print(f"[FaceDetectionWebRTC] Failed to broadcast to WebSocket client: {e}")
+                dead_connections.append(ws)
+        for ws in dead_connections:
+            self.remove_ws(ws)
 
     def add_ws(self, ws):
         if ws not in self.ws_connections:
