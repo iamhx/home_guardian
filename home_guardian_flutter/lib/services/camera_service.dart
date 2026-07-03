@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 
@@ -8,9 +9,13 @@ class CameraService {
     try {
       final uri = _buildUri(url, '/api/health');
       final response = await http.get(uri).timeout(_timeout);
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) {
+        debugPrint('[CameraService] getServerHealth failed: HTTP ${response.statusCode}');
+        return null;
+      }
       return json.decode(response.body) as Map<String, dynamic>;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[CameraService] getServerHealth error for $url: $e');
       return null;
     }
   }
@@ -21,11 +26,15 @@ class CameraService {
     try {
       final uri = _buildUri(url, '/api/health');
       final response = await http.get(uri).timeout(_timeout);
-      if (response.statusCode != 200) return false;
+      if (response.statusCode != 200) {
+        debugPrint('[CameraService] testServerConnection failed: HTTP ${response.statusCode}');
+        return false;
+      }
       final data = json.decode(response.body) as Map<String, dynamic>;
       // Only check for Home Guardian signature
       return data['home_guardian'] == true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[CameraService] testServerConnection error for $url: $e');
       return false;
     }
   }
@@ -51,7 +60,8 @@ class CameraService {
       }
       final uri = Uri.parse(cleanUrl);
       return uri.hasScheme && uri.hasAuthority && (uri.scheme == 'http' || uri.scheme == 'https');
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[CameraService] isValidUrl error: $e');
       return false;
     }
   }
@@ -69,7 +79,8 @@ class CameraService {
         host += ':${uri.port}';
       }
       return host;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[CameraService] getDisplayName error: $e');
       return url;
     }
   }
