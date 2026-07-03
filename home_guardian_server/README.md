@@ -34,11 +34,38 @@ Transfer these files to deploy on fresh machine:
 
 ## ⚙️ Configuration
 
+### Environment Variables
+
+All configuration is loaded from environment variables (no secrets in source code).
+Create a `.env` file or export them in your shell:
+
+```bash
+# ESP32 serial connection
+export ESP32_PORT="/dev/ttyUSB0"        # default: /dev/ttyUSB0
+export ESP32_BAUD="115200"               # default: 115200
+
+# Server binding (defaults to localhost for safety)
+export SERVER_HOST="127.0.0.1"           # use 0.0.0.0 only on trusted networks
+export SERVER_PORT="8234"                # default: 8234
+
+# CORS allowed origins (comma-separated, empty = deny all cross-origin)
+export CORS_ORIGINS="http://localhost:3000"
+
+# Wake word (optional)
+export PICOVOICE_ACCESS_KEY="your_access_key"
+export WAKE_WORD_KEYWORD_FILES="home_guardian_wake_word.ppn"
+export WAKE_WORD_DEVICE_INDEX=""         # empty for default mic
+
+# Firebase Cloud Messaging (optional)
+export FIREBASE_PROJECT_ID="your-project-id"
+export FCM_SERVICE_ACCOUNT_FILE="home-guardian_firebase.json"
+```
+
 ### ESP32 Setup
 1. Flash `esp32_home_guardian_v2.ino` to your ESP32
-2. Update `ESP32_PORT` in `home_guardian_server_v2.py` if needed (default: `/dev/ttyUSB0`)
+2. Set `ESP32_PORT` env var if needed (default: `/dev/ttyUSB0`)
 3. Servo pins are configured in the .ino file (default: pan=33, tilt=27)
-4. ESP32 baud rate: 115200 (configurable in server)
+4. ESP32 baud rate: 115200 (configurable via `ESP32_BAUD`)
 
 ### Wake Word Setup (Optional)
 1. Get free access key from https://console.picovoice.ai/
@@ -47,11 +74,11 @@ Transfer these files to deploy on fresh machine:
    - Click "Create Keyword" 
    - Type your custom phrase (e.g., "home guardian", "activate system", "hello computer")
    - Download the `.ppn` file to your project folder
-3. Configure in `home_guardian_server_v2.py`:
-   ```python
-   PICOVOICE_ACCESS_KEY = "your_access_key_here"
-   WAKE_WORD_KEYWORD_FILES = ["your_custom_keyword.ppn"]
-   WAKE_WORD_DEVICE_INDEX = None  # or specific device index (e.g., 4)
+3. Set environment variables:
+   ```bash
+   export PICOVOICE_ACCESS_KEY="your_access_key_here"
+   export WAKE_WORD_KEYWORD_FILES="your_custom_keyword.ppn"
+   # export WAKE_WORD_DEVICE_INDEX=4  # optional: specific device index
    ```
 4. Test with: `python wake_word.py`
 
@@ -62,10 +89,10 @@ Transfer these files to deploy on fresh machine:
    - Go to Project Settings > Service Accounts
    - Click "Generate new private key" 
    - Save as `home-guardian_firebase.json` in your project folder
-4. Configure in `home_guardian_server_v2.py`:
-   ```python
-   FIREBASE_PROJECT_ID = "your-project-id"
-   FCM_SERVICE_ACCOUNT_FILE = "home-guardian_firebase.json"
+4. Set environment variables:
+   ```bash
+   export FIREBASE_PROJECT_ID="your-project-id"
+   export FCM_SERVICE_ACCOUNT_FILE="home-guardian_firebase.json"
    ```
 5. Test FCM connectivity in health endpoint
 
@@ -206,7 +233,7 @@ pip install -r requirements_full.txt    # Reinstall dependencies
 
 ## 🔐 Development Notes
 
-- Server runs on localhost:8234 for testing
+- Server binds to localhost:8234 by default (set `SERVER_HOST=0.0.0.0` for network access)
 - ESP32 communicates via USB serial 
 - MediaMTX handles WebRTC video streaming
 - Wake word detection uses laptop microphone

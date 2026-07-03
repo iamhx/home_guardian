@@ -2,9 +2,12 @@
 # FastAPI server with ESP32 integration, face detection, and optional wake word
 
 import asyncio
+import os
+import re
 import serial
 import threading
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from enum import Enum
 from typing import Optional
@@ -37,29 +40,43 @@ except ImportError as e:
     messaging = None
     FCM_AVAILABLE = False
 
-# Configuration
-ESP32_PORT = "/dev/ttyUSB0"  # Update for your system
-ESP32_BAUD = 115200
-SERIAL_TIMEOUT = 1
+# Configuration — all secrets and host settings are loaded from environment
+# variables so that nothing sensitive is hardcoded in source control.
+ESP32_PORT = os.environ.get("ESP32_PORT", "/dev/ttyUSB0")
+ESP32_BAUD = int(os.environ.get("ESP32_BAUD", "115200"))
+SERIAL_TIMEOUT = int(os.environ.get("SERIAL_TIMEOUT", "1"))
 
 # Wake word configuration (optional)
+# Set via: export PICOVOICE_ACCESS_KEY="your_access_key"
+PICOVOICE_ACCESS_KEY = os.environ.get("PICOVOICE_ACCESS_KEY", "")
 
-# Set your Picovoice access key here
-PICOVOICE_ACCESS_KEY = "picovoice_api_key_here"
-
-# Replace with your .ppn file from https://console.picovoice.ai/
-WAKE_WORD_KEYWORD_FILES = ["home_guardian_wake_word.ppn"]
+# Keyword file path(s), comma-separated if multiple
+# Set via: export WAKE_WORD_KEYWORD_FILES="home_guardian_wake_word.ppn"
+_kw_files = os.environ.get("WAKE_WORD_KEYWORD_FILES", "")
+WAKE_WORD_KEYWORD_FILES = [f.strip() for f in _kw_files.split(",") if f.strip()] if _kw_files else []
 
 # None for default mic, or specific device index (can be checked by running wake_word.py)
-WAKE_WORD_DEVICE_INDEX = None
+_dev_idx = os.environ.get("WAKE_WORD_DEVICE_INDEX")
+WAKE_WORD_DEVICE_INDEX = int(_dev_idx) if _dev_idx is not None else None
 
 # Firebase Cloud Messaging configuration (optional)
-
-# Set your Firebase project ID here
-FIREBASE_PROJECT_ID = "project-id-here"
+# Set via: export FIREBASE_PROJECT_ID="your-project-id"
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "")
 
 # Path to your service account JSON file
-FCM_SERVICE_ACCOUNT_FILE = "home-guardian_firebase.json"
+FCM_SERVICE_ACCOUNT_FILE = os.environ.get("FCM_SERVICE_ACCOUNT_FILE", "home-guardian_firebase.json")
+
+# Server host/port — default to localhost for safety
+SERVER_HOST = os.environ.get("SERVER_HOST", "127.0.0.1")
+SERVER_PORT = int(os.environ.get("SERVER_PORT", "8234"))
+
+# CORS — restrict to known origins; comma-separated list
+# Set via: export CORS_ORIGINS="http://localhost:3000,http://192.168.1.100:8234"
+_cors_env = os.environ.get("CORS_ORIGINS", "")
+CORS_ORIGINS = [o.strip() for o in _cors_env.split(",") if o.strip()] if _cors_env else []
+
+# Allowed serial command pattern (uppercase letters, digits, underscore, comma)
+_SERIAL_CMD_RE = re.compile(r"^[A-Z0-9_,]+$")
 
 # Data models
 class CameraMode(str, Enum):
@@ -219,6 +236,15 @@ class HomeGuardianServerV2:
 
     def __init__(self, port=ESP32_PORT, baud=ESP32_BAUD):
         self.app = FastAPI(title="Home Guardian API v2")
+
+        # CORS middleware — restrictive by default
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=CORS_ORIGINS if CORS_ORIGINS else [],
+            allow_credentials=True,
+            allow_methods=["GET", "POST"],
+            allow_headers=["*"],
+        )
         self.serial_port = port
         self.baud_rate = baud
         self.serial_connection = None
@@ -314,10 +340,14 @@ class HomeGuardianServerV2:
     def _send_command(self, cmd: str):
         if not self.serial_connection:
             raise HTTPException(status_code=503, detail="ESP32 not connected")
+        # Validate command against allowlist pattern to prevent injection
+        if not _SERIAL_CMD_RE.match(cmd):
+            raise HTTPException(status_code=400, detail="Invalid command format")
         try:
             self.serial_connection.write(f"{cmd}\n".encode())
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Serial error: {e}")
+            print(f"[Serial] Error sending command: {e}")
+            raise HTTPException(status_code=500, detail="Serial communication error")
 
     def _read_status(self, timeout=1.0):
         # Send STATUS command and parse response
@@ -352,7 +382,8 @@ class HomeGuardianServerV2:
         except Exception as e:
             if isinstance(e, HTTPException):
                 raise e
-            raise HTTPException(status_code=500, detail=f"Status read error: {e}")
+            print(f"[Serial] Status read error: {e}")
+            raise HTTPException(status_code=500, detail="Failed to read status from ESP32")
 
 
     def _setup_routes(self):
@@ -508,7 +539,8 @@ class HomeGuardianServerV2:
                             server.camera_status.current_tilt = tilt
                             server.camera_status.last_update = datetime.now().isoformat()
                     except Exception as e:
-                        await websocket.send_text(json.dumps({"error": str(e)}))
+                        print(f"[WebSocket] Manual control error: {e}")
+                        await websocket.send_text(json.dumps({"error": "Invalid command"}))
             except WebSocketDisconnect:
                 pass
             finally:
@@ -539,4 +571,4 @@ app = server.app
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8234)
+    uvicorn.run(app, host=SERVER_HOST, port=SERVER_PORT)
